@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}All Findings — ConfigGuard{% endblock %}
+{% block content %}
+<h1 style="margin-bottom: 1.5rem;">All Findings ({{ findings|length }})</h1>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Severity</th>
+                <th>Title</th>
+                <th>Device</th>
+                <th>Framework</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in findings %}
+            <tr>
+                <td><span class="badge badge-{{ item.finding.severity.value }}">{{ item.finding.severity.value|upper }}</span></td>
+                <td>{{ item.finding.title }}</td>
+                <td>{{ item.finding.device_name }}</td>
+                <td>{{ item.finding.framework.value }}</td>
+                <td>
+                    {% if item.status == 'open' %}
+                    <span class="badge badge-open">Open</span>
+                    {% else %}
+                    <span class="badge badge-remediated">{{ item.status }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/report/{{ item.report_id }}" class="btn btn-primary btn-sm">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

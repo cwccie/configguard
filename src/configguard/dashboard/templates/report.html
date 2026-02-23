@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Report {{ report.report_id }} — ConfigGuard{% endblock %}
+{% block content %}
+<h1 style="margin-bottom: 0.5rem;">Compliance Report</h1>
+<p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+    Report {{ report.report_id }} — {{ report.generated_at.strftime('%Y-%m-%d %H:%M UTC') }}
+</p>
+
+<div class="grid">
+    <div class="stat-card">
+        <div class="value {% if report.compliance_score >= 80 %}score-good{% elif report.compliance_score >= 60 %}score-warn{% else %}score-bad{% endif %}">
+            {{ report.compliance_score }}%
+        </div>
+        <div class="label">Compliance Score</div>
+    </div>
+    <div class="stat-card">
+        <div class="value severity-critical">{{ report.critical_count }}</div>
+        <div class="label">Critical</div>
+    </div>
+    <div class="stat-card">
+        <div class="value severity-high">{{ report.high_count }}</div>
+        <div class="label">High</div>
+    </div>
+    <div class="stat-card">
+        <div class="value severity-medium">{{ report.medium_count }}</div>
+        <div class="label">Medium</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Findings ({{ enriched|length }})</h2>
+    {% for item in enriched %}
+    <div style="border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h3>
+                <span class="badge badge-{{ item.finding.severity.value }}">{{ item.finding.severity.value|upper }}</span>
+                {{ item.finding.title }}
+            </h3>
+            {% if item.status == 'open' %}
+            <form method="POST" action="/finding/{{ item.finding.finding_id }}/remediate" style="display:inline;">
+                <input type="hidden" name="status" value="remediated">
+                <button type="submit" class="btn btn-success btn-sm">Mark Fixed</button>
+            </form>
+            {% else %}
+            <span class="badge badge-remediated">{{ item.status }}</span>
+            {% endif %}
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+            {{ item.finding.framework.value }} / {{ item.finding.control_id }}
+        </p>
+        <p style="margin-bottom: 0.75rem;">{{ item.explanation.what }}</p>
+
+        <details style="margin-bottom: 0.5rem;">
+            <summary style="cursor: pointer; color: var(--primary);">Risk Context</summary>
+            <p style="padding: 0.5rem; color: var(--text-muted);">{{ item.explanation.risk }}</p>
+        </details>
+        <details style="margin-bottom: 0.5rem;">
+            <summary style="cursor: pointer; color: var(--primary);">Business Impact</summary>
+            <p style="padding: 0.5rem; color: var(--text-muted);">{{ item.explanation.impact }}</p>
+        </details>
+        <details>
+            <summary style="cursor: pointer; color: var(--primary);">Remediation</summary>
+            <pre>{{ item.plan.config_snippet }}</pre>
+        </details>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

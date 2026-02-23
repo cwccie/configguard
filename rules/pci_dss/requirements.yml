@@ -1,0 +1,294 @@
+# PCI-DSS v4.0 Network Requirements
+framework: pci_dss
+
+rules:
+  - id: PCI-1.2.1
+    title: "No firewall ACLs configured"
+    description: "Network security controls must restrict traffic (PCI-DSS 1.2.1)"
+    control_id: "1.2.1"
+    severity: critical
+    check_type: config_match
+    match_pattern: "access-list|ip access-group"
+    must_exist: true
+    remediation: "ip access-list extended PCI-FILTER\n deny ip any any log\ninterface <INTERFACE>\n ip access-group PCI-FILTER in"
+    explanation: "No access control lists are configured to filter network traffic."
+    risk_description: "Without ACLs, there is no network segmentation between the cardholder data environment and other networks."
+    business_impact: "PCI-DSS 1.2.1 violation — automatic audit failure. Fines up to $100,000/month."
+    tags: [firewall, acl, network-segmentation, pci]
+    references:
+      - "https://www.pcisecuritystandards.org/document_library/"
+
+  - id: PCI-1.3.1
+    title: "No inbound ACL on external interface"
+    description: "Inbound traffic must be restricted at the perimeter (PCI-DSS 1.3.1)"
+    control_id: "1.3.1"
+    severity: critical
+    check_type: interface_check
+    match_pattern: "ip access-group .* in"
+    must_exist: true
+    remediation: "interface <EXTERNAL-INTERFACE>\n ip access-group PERIMETER-IN in"
+    explanation: "External-facing interfaces do not have inbound access control lists."
+    risk_description: "All inbound traffic from the internet reaches internal networks without filtering."
+    business_impact: "Cardholder data environment directly exposed. PCI-DSS 1.3.1 critical violation."
+    tags: [firewall, perimeter, inbound, pci]
+
+  - id: PCI-2.2.1
+    title: "Unnecessary services not disabled"
+    description: "Only necessary services should be enabled (PCI-DSS 2.2.1)"
+    control_id: "2.2.1"
+    severity: medium
+    check_type: config_match
+    match_pattern: "service (finger|pad|tcp-small-servers|udp-small-servers)"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no service finger\nno service pad\nno service tcp-small-servers\nno service udp-small-servers"
+    explanation: "Unnecessary network services are enabled on this device."
+    risk_description: "Each unnecessary service is an additional attack vector that must be patched and monitored."
+    business_impact: "Increased attack surface. PCI-DSS 2.2.1 non-compliance."
+    tags: [services, hardening, pci]
+
+  - id: PCI-2.2.2
+    title: "Default SNMP community strings"
+    description: "Vendor default passwords must be changed (PCI-DSS 2.2.2)"
+    control_id: "2.2.2"
+    severity: critical
+    check_type: config_match
+    match_section: snmp
+    match_pattern: "community (public|private)"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no snmp-server community public\nno snmp-server community private"
+    explanation: "Default SNMP community strings (vendor defaults) are still configured."
+    risk_description: "Default credentials are publicly known and are the first thing attackers attempt."
+    business_impact: "Vendor default credential — automatic PCI-DSS audit failure."
+    tags: [snmp, default-credentials, pci, critical]
+
+  - id: PCI-2.3.1
+    title: "Non-encrypted management protocol in use"
+    description: "All management access must be encrypted (PCI-DSS 2.3.1)"
+    control_id: "2.3.1"
+    severity: critical
+    check_type: config_match
+    match_section: line
+    match_pattern: "transport input ssh"
+    must_exist: true
+    remediation: "line vty 0 15\n transport input ssh"
+    explanation: "Management access does not enforce encryption (SSH). Telnet or other plaintext protocols may be in use."
+    risk_description: "Administrative credentials transmitted over unencrypted channels can be intercepted."
+    business_impact: "Credential compromise. PCI-DSS 2.3.1 automatic failure."
+    tags: [encryption, management, ssh, pci]
+
+  - id: PCI-4.1.1
+    title: "Strong encryption not configured"
+    description: "Strong cryptography must be used for transmission (PCI-DSS 4.1.1)"
+    control_id: "4.1.1"
+    severity: high
+    check_type: config_match
+    match_pattern: "ip ssh version 2"
+    must_exist: true
+    remediation: "ip ssh version 2\ncrypto key generate rsa modulus 2048"
+    explanation: "SSH version 2 (strong cryptography) is not enforced."
+    risk_description: "Weak cryptographic protocols can be broken to intercept sensitive data."
+    business_impact: "PCI-DSS 4.1.1 non-compliance — inadequate encryption."
+    tags: [encryption, ssh, cryptography, pci]
+
+  - id: PCI-5.3.1
+    title: "No logging configured"
+    description: "Security events must be logged (PCI-DSS 5.3.1)"
+    control_id: "5.3.1"
+    severity: high
+    check_type: config_match
+    match_section: logging
+    match_pattern: "logging (host|\\d+\\.)"
+    must_exist: true
+    remediation: "logging host 10.0.0.100\nlogging trap informational"
+    explanation: "No centralized logging is configured. Security events are not being captured."
+    risk_description: "Security incidents involving this device will go undetected and cannot be investigated."
+    business_impact: "PCI-DSS 5.3.1 violation — no security event monitoring."
+    tags: [logging, monitoring, pci]
+
+  - id: PCI-7.1.1
+    title: "No role-based access control"
+    description: "Access must be limited by business need-to-know (PCI-DSS 7.1.1)"
+    control_id: "7.1.1"
+    severity: high
+    check_type: config_match
+    match_pattern: "aaa authorization"
+    must_exist: true
+    remediation: "aaa authorization exec default group tacacs+ local\naaa authorization commands 15 default group tacacs+ local"
+    explanation: "AAA authorization is not configured. All authenticated users have the same access level."
+    risk_description: "Without authorization controls, any user with valid credentials has full device access."
+    business_impact: "Violation of least privilege. PCI-DSS 7.1.1 non-compliance."
+    tags: [authorization, rbac, pci]
+
+  - id: PCI-8.2.1
+    title: "Plaintext passwords in configuration"
+    description: "Passwords must not be stored in plaintext (PCI-DSS 8.2.1)"
+    control_id: "8.2.1"
+    severity: critical
+    check_type: password_check
+    must_not_exist: true
+    must_exist: false
+    remediation: "service password-encryption\nenable algorithm-type scrypt secret <PASSWORD>"
+    explanation: "Passwords are stored in plaintext or weakly encrypted form in the configuration."
+    risk_description: "Plaintext passwords can be read directly from configuration files, backups, or SNMP queries."
+    business_impact: "Credential compromise — PCI-DSS 8.2.1 critical violation."
+    tags: [password, plaintext, credentials, pci]
+
+  - id: PCI-8.3.1
+    title: "Multi-factor authentication not referenced"
+    description: "MFA should be configured for administrative access (PCI-DSS 8.3.1)"
+    control_id: "8.3.1"
+    severity: medium
+    check_type: config_match
+    match_pattern: "aaa authentication login .+ group (tacacs|radius)"
+    must_exist: true
+    remediation: "aaa authentication login default group tacacs+ local"
+    explanation: "Authentication does not reference a TACACS+/RADIUS server that could enforce MFA."
+    risk_description: "Without MFA, stolen credentials alone grant full access."
+    business_impact: "PCI-DSS 8.3.1 MFA requirement may not be met."
+    tags: [mfa, authentication, pci]
+
+  - id: PCI-10.1.1
+    title: "Audit trail not enabled"
+    description: "All access must be logged (PCI-DSS 10.1.1)"
+    control_id: "10.1.1"
+    severity: high
+    check_type: config_match
+    match_pattern: "aaa accounting"
+    must_exist: true
+    remediation: "aaa accounting exec default start-stop group tacacs+"
+    explanation: "AAA accounting (audit trail) is not configured."
+    risk_description: "No record of who accessed the device, what commands were executed, or when."
+    business_impact: "PCI-DSS 10.1.1 — no audit trail. Automatic audit failure."
+    tags: [audit, accounting, pci]
+
+  - id: PCI-10.2.1
+    title: "NTP not configured for log timestamps"
+    description: "System clocks must be synchronized (PCI-DSS 10.2.1)"
+    control_id: "10.2.1"
+    severity: high
+    check_type: config_match
+    match_section: ntp
+    match_pattern: "ntp server"
+    must_exist: true
+    remediation: "ntp server 10.0.0.50\nntp server 10.0.0.51"
+    explanation: "NTP is not configured. Log timestamps cannot be correlated across devices."
+    risk_description: "Without synchronized time, security logs from different devices cannot be analyzed together."
+    business_impact: "PCI-DSS 10.2.1 — inaccurate audit timestamps."
+    tags: [ntp, time, audit, pci]
+
+  - id: PCI-10.3.1
+    title: "Log timestamps missing milliseconds"
+    description: "Timestamps must include date, time, and timezone (PCI-DSS 10.3.1)"
+    control_id: "10.3.1"
+    severity: medium
+    check_type: config_match
+    match_pattern: "service timestamps log datetime"
+    must_exist: true
+    remediation: "service timestamps log datetime msec localtime show-timezone"
+    explanation: "Log timestamps do not include sufficient detail (milliseconds, timezone)."
+    risk_description: "Imprecise timestamps make event correlation and forensic analysis unreliable."
+    business_impact: "Degraded forensic capability. PCI-DSS 10.3.1 gap."
+    tags: [timestamps, logging, pci]
+
+  - id: PCI-1.1.1
+    title: "No documented network topology"
+    description: "Network documentation must include current topology (PCI-DSS 1.1.1)"
+    control_id: "1.1.1"
+    severity: medium
+    check_type: config_match
+    match_pattern: "description"
+    must_exist: true
+    match_section: interface
+    remediation: "interface <INTERFACE>\n description <PURPOSE>"
+    explanation: "Interfaces lack descriptions, indicating poor network documentation."
+    risk_description: "Undocumented interfaces may have unknown trust levels."
+    business_impact: "PCI-DSS 1.1.1 documentation requirement gap."
+    tags: [documentation, interface, pci]
+
+  - id: PCI-2.1.1
+    title: "Default enable password type"
+    description: "Vendor-default passwords must not be used (PCI-DSS 2.1.1)"
+    control_id: "2.1.1"
+    severity: critical
+    check_type: config_match
+    match_pattern: "enable password "
+    must_not_exist: true
+    must_exist: false
+    remediation: "no enable password\nenable algorithm-type scrypt secret <STRONG_PASSWORD>"
+    explanation: "Weak enable password type detected (Type 7 or plaintext)."
+    risk_description: "Weak password hashing is trivially reversible."
+    business_impact: "Vendor default credential weakness — PCI-DSS 2.1.1 violation."
+    tags: [password, default, pci]
+
+  - id: PCI-6.1.1
+    title: "No description on interfaces"
+    description: "All active interfaces must be documented (PCI-DSS 6.1.1)"
+    control_id: "6.1.1"
+    severity: low
+    check_type: interface_check
+    match_pattern: "description"
+    must_exist: true
+    remediation: "interface <INTERFACE>\n description <DESCRIPTION>"
+    explanation: "Active interfaces lack descriptions."
+    risk_description: "Undocumented interfaces indicate poor change management."
+    business_impact: "PCI-DSS 6.1.1 — insufficient system component documentation."
+    tags: [documentation, change-management, pci]
+
+  - id: PCI-1.4.1
+    title: "No explicit deny ACL rule"
+    description: "Firewalls must have explicit deny-all at end of ruleset (PCI-DSS 1.4.1)"
+    control_id: "1.4.1"
+    severity: high
+    check_type: config_match
+    match_pattern: "deny ip any any"
+    must_exist: true
+    remediation: "access-list <NUMBER> deny ip any any log"
+    explanation: "No explicit deny-all rule at end of access control list."
+    risk_description: "Without explicit deny, unmatched traffic may be permitted by implicit rules."
+    business_impact: "PCI-DSS 1.4.1 — firewall must deny all traffic not explicitly allowed."
+    tags: [acl, deny-all, firewall, pci]
+
+  - id: PCI-8.1.1
+    title: "Local user accounts without privilege levels"
+    description: "User accounts must have assigned roles (PCI-DSS 8.1.1)"
+    control_id: "8.1.1"
+    severity: medium
+    check_type: config_match
+    match_section: user
+    match_pattern: "privilege"
+    must_exist: true
+    remediation: "username <USER> privilege <LEVEL> algorithm-type scrypt secret <PASSWORD>"
+    explanation: "Local user accounts do not have explicit privilege levels assigned."
+    risk_description: "Without privilege assignments, all users may have default (full) access."
+    business_impact: "Violation of least-privilege principle. PCI-DSS 8.1.1 gap."
+    tags: [users, privilege, rbac, pci]
+
+  - id: PCI-11.2.1
+    title: "SNMP v3 not configured"
+    description: "SNMP must use v3 with authentication and privacy (PCI-DSS 11.2.1)"
+    control_id: "11.2.1"
+    severity: high
+    check_type: config_match
+    match_pattern: "snmp-server (group|user).*v3"
+    must_exist: true
+    remediation: "snmp-server group SNMPV3GRP v3 priv\nsnmp-server user snmpuser SNMPV3GRP v3 auth sha <PASS> priv aes 256 <PASS>"
+    explanation: "SNMPv3 with authentication and encryption is not configured."
+    risk_description: "SNMPv1/v2c transmit community strings in cleartext, exposable via network sniffing."
+    business_impact: "PCI-DSS 11.2.1 — monitoring protocol must use strong authentication."
+    tags: [snmp, v3, encryption, pci]
+
+  - id: PCI-12.1.1
+    title: "Logging source interface not configured"
+    description: "Logging should use a consistent source interface (PCI-DSS 12.1.1)"
+    control_id: "12.1.1"
+    severity: low
+    check_type: config_match
+    match_pattern: "logging source-interface"
+    must_exist: true
+    remediation: "logging source-interface Loopback0"
+    explanation: "No source interface configured for syslog messages."
+    risk_description: "Logs from different interfaces may be harder to correlate and filter."
+    business_impact: "Log management complexity. PCI-DSS 12.1.1 policy gap."
+    tags: [logging, source-interface, pci]

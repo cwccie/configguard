@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}ConfigGuard Dashboard{% endblock %}
+{% block content %}
+<h1 style="margin-bottom: 1.5rem;">Compliance Dashboard</h1>
+
+<div class="grid">
+    <div class="stat-card">
+        <div class="value {% if avg_score >= 80 %}score-good{% elif avg_score >= 60 %}score-warn{% else %}score-bad{% endif %}">
+            {{ avg_score }}%
+        </div>
+        <div class="label">Average Compliance Score</div>
+    </div>
+    <div class="stat-card">
+        <div class="value">{{ device_scores|length }}</div>
+        <div class="label">Devices Scanned</div>
+    </div>
+    <div class="stat-card">
+        <div class="value severity-high">{{ total_findings }}</div>
+        <div class="label">Total Findings</div>
+    </div>
+    <div class="stat-card">
+        <div class="value">{{ reports|length }}</div>
+        <div class="label">Reports Generated</div>
+    </div>
+</div>
+
+{% if device_scores %}
+<div class="card">
+    <h2>Device Compliance Scores</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Device</th>
+                <th>Compliance Score</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for device, score in device_scores.items() %}
+            <tr>
+                <td>{{ device }}</td>
+                <td>
+                    <span class="{% if score >= 80 %}score-good{% elif score >= 60 %}score-warn{% else %}score-bad{% endif %}">
+                        {{ score }}%
+                    </span>
+                </td>
+                <td>
+                    {% if score >= 80 %}
+                        <span class="badge badge-remediated">Compliant</span>
+                    {% elif score >= 60 %}
+                        <span class="badge badge-medium">Needs Attention</span>
+                    {% else %}
+                        <span class="badge badge-critical">Non-Compliant</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>Framework Coverage</h2>
+    <table>
+        <thead>
+            <tr><th>Framework</th><th>Rules Loaded</th></tr>
+        </thead>
+        <tbody>
+            {% for fw, count in fw_coverage.items() %}
+            <tr>
+                <td>{{ fw }}</td>
+                <td>{{ count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if reports %}
+<div class="card">
+    <h2>Recent Reports</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Report ID</th>
+                <th>Generated</th>
+                <th>Devices</th>
+                <th>Score</th>
+                <th>Findings</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports|reverse %}
+            <tr>
+                <td>{{ report.report_id }}</td>
+                <td>{{ report.generated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ report.devices|join(', ') }}</td>
+                <td class="{% if report.compliance_score >= 80 %}score-good{% elif report.compliance_score >= 60 %}score-warn{% else %}score-bad{% endif %}">
+                    {{ report.compliance_score }}%
+                </td>
+                <td>{{ report.findings|length }}</td>
+                <td><a href="/report/{{ report.report_id }}" class="btn btn-primary btn-sm">View</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card">
+    <h2>Getting Started</h2>
+    <p style="color: var(--text-muted);">
+        No configs scanned yet. <a href="/scan" style="color: var(--primary);">Scan your first configuration</a> to begin.
+    </p>
+</div>
+{% endif %}
+{% endblock %}

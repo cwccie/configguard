@@ -1,0 +1,294 @@
+# CIS Benchmark — Network Device Hardening
+framework: cis_benchmark
+
+rules:
+  - id: CIS-1.1.1
+    title: "Enable secret not set"
+    description: "Enable secret must be configured with strong hashing (CIS 1.1.1)"
+    control_id: "1.1.1"
+    severity: critical
+    check_type: config_match
+    match_pattern: "enable (secret|algorithm-type)"
+    must_exist: true
+    remediation: "enable algorithm-type scrypt secret <STRONG_PASSWORD>"
+    explanation: "No enable secret is configured with strong hashing. Privileged EXEC mode may be unprotected or weakly protected."
+    risk_description: "Without a strong enable secret, any user accessing the device can escalate to full administrative privileges."
+    business_impact: "Complete device compromise. CIS benchmark hardening failure."
+    tags: [hardening, enable-secret, cis]
+
+  - id: CIS-1.1.2
+    title: "Service password-encryption not enabled"
+    description: "Password encryption service must be enabled (CIS 1.1.2)"
+    control_id: "1.1.2"
+    severity: high
+    check_type: config_match
+    match_pattern: "service password-encryption"
+    must_exist: true
+    remediation: "service password-encryption"
+    explanation: "Password encryption service is not enabled. Passwords appear in plaintext in the running configuration."
+    risk_description: "Configuration backups, screen captures, or shoulder surfing can reveal all device passwords."
+    business_impact: "Credential exposure through configuration access. CIS 1.1.2 non-compliance."
+    tags: [password, encryption, hardening]
+
+  - id: CIS-1.1.3
+    title: "AAA new-model not enabled"
+    description: "AAA new-model must be enabled for centralized authentication (CIS 1.1.3)"
+    control_id: "1.1.3"
+    severity: high
+    check_type: config_match
+    match_pattern: "aaa new-model"
+    must_exist: true
+    remediation: "aaa new-model"
+    explanation: "AAA new-model is not enabled. Authentication is handled by line passwords rather than centralized AAA."
+    risk_description: "Line passwords are shared, cannot be attributed to individual users, and lack accountability."
+    business_impact: "No individual user accountability. Shared credential risk."
+    tags: [aaa, authentication, hardening]
+
+  - id: CIS-1.2.1
+    title: "SSH version 2 not configured"
+    description: "Only SSH version 2 should be allowed (CIS 1.2.1)"
+    control_id: "1.2.1"
+    severity: high
+    check_type: config_match
+    match_pattern: "ip ssh version 2"
+    must_exist: true
+    remediation: "ip ssh version 2\ncrypto key generate rsa modulus 2048"
+    explanation: "SSH version 2 is not explicitly configured."
+    risk_description: "SSHv1 is cryptographically broken and vulnerable to session hijacking."
+    business_impact: "Management protocol vulnerability. CIS 1.2.1 non-compliance."
+    tags: [ssh, management, hardening]
+
+  - id: CIS-1.2.2
+    title: "SSH timeout not configured"
+    description: "SSH authentication timeout should be set (CIS 1.2.2)"
+    control_id: "1.2.2"
+    severity: low
+    check_type: config_match
+    match_pattern: "ip ssh time-out"
+    must_exist: true
+    remediation: "ip ssh time-out 60"
+    explanation: "SSH authentication timeout is not configured."
+    risk_description: "Without a timeout, incomplete SSH sessions can consume resources."
+    business_impact: "Resource consumption and potential denial of service."
+    tags: [ssh, timeout, hardening]
+
+  - id: CIS-1.2.3
+    title: "SSH retry limit not configured"
+    description: "SSH authentication retries should be limited (CIS 1.2.3)"
+    control_id: "1.2.3"
+    severity: medium
+    check_type: config_match
+    match_pattern: "ip ssh authentication-retries"
+    must_exist: true
+    remediation: "ip ssh authentication-retries 3"
+    explanation: "SSH authentication retry limit is not set."
+    risk_description: "Unlimited retries allow brute force password attacks via SSH."
+    business_impact: "Increased brute force attack window."
+    tags: [ssh, brute-force, hardening]
+
+  - id: CIS-1.3.1
+    title: "Telnet allowed on VTY lines"
+    description: "VTY lines must use SSH only, no Telnet (CIS 1.3.1)"
+    control_id: "1.3.1"
+    severity: critical
+    check_type: config_match
+    match_section: line
+    match_pattern: "transport input.*telnet"
+    must_not_exist: true
+    must_exist: false
+    remediation: "line vty 0 15\n transport input ssh"
+    explanation: "Telnet is permitted on VTY lines. All management traffic including passwords is unencrypted."
+    risk_description: "Credentials transmitted in cleartext can be captured by any device on the network path."
+    business_impact: "Credential theft. Automatic CIS benchmark failure."
+    tags: [telnet, vty, management, critical]
+
+  - id: CIS-1.4.1
+    title: "Console exec-timeout not set"
+    description: "Console must have an exec-timeout (CIS 1.4.1)"
+    control_id: "1.4.1"
+    severity: medium
+    check_type: config_match
+    match_section: line
+    match_pattern: "exec-timeout"
+    must_exist: true
+    remediation: "line con 0\n exec-timeout 5 0"
+    explanation: "Console session does not have an inactivity timeout."
+    risk_description: "An unattended console session can be used by anyone with physical access."
+    business_impact: "Physical access exploitation risk."
+    tags: [console, timeout, hardening]
+
+  - id: CIS-2.1.1
+    title: "SNMP community string 'public' detected"
+    description: "Default SNMP community strings must be removed (CIS 2.1.1)"
+    control_id: "2.1.1"
+    severity: critical
+    check_type: config_match
+    match_section: snmp
+    match_pattern: "community public"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no snmp-server community public"
+    explanation: "The default SNMP community string 'public' is configured."
+    risk_description: "Default community strings are the first thing attackers try. Full device config readable via SNMP."
+    business_impact: "Complete configuration disclosure. Network topology mapping."
+    tags: [snmp, default-credentials, critical]
+
+  - id: CIS-2.1.2
+    title: "SNMP community string 'private' detected"
+    description: "Default SNMP RW community string must be removed (CIS 2.1.2)"
+    control_id: "2.1.2"
+    severity: critical
+    check_type: config_match
+    match_section: snmp
+    match_pattern: "community private"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no snmp-server community private"
+    explanation: "The default SNMP read-write community string 'private' is configured."
+    risk_description: "With the 'private' community string, anyone can MODIFY the device configuration remotely."
+    business_impact: "Full device compromise via SNMP write access. Critical security breach."
+    tags: [snmp, default-credentials, critical]
+
+  - id: CIS-2.2.1
+    title: "Finger service enabled"
+    description: "Finger service must be disabled (CIS 2.2.1)"
+    control_id: "2.2.1"
+    severity: medium
+    check_type: config_match
+    match_pattern: "service finger"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no service finger\nno ip finger"
+    explanation: "The finger service is enabled, exposing user login information."
+    risk_description: "Finger reveals which users are logged in, from where, and how long they've been idle."
+    business_impact: "User enumeration and information disclosure."
+    tags: [services, finger, hardening]
+
+  - id: CIS-2.2.2
+    title: "PAD service enabled"
+    description: "PAD service must be disabled (CIS 2.2.2)"
+    control_id: "2.2.2"
+    severity: low
+    check_type: config_match
+    match_pattern: "service pad"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no service pad"
+    explanation: "The PAD (Packet Assembler/Disassembler) service is enabled."
+    risk_description: "PAD is an X.25 service rarely needed in modern networks and increases attack surface."
+    business_impact: "Unnecessary attack surface."
+    tags: [services, pad, hardening]
+
+  - id: CIS-2.2.3
+    title: "TCP small servers enabled"
+    description: "TCP small servers must be disabled (CIS 2.2.3)"
+    control_id: "2.2.3"
+    severity: medium
+    check_type: config_match
+    match_pattern: "service tcp-small-servers"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no service tcp-small-servers"
+    explanation: "TCP small servers (echo, chargen, discard, daytime) are enabled."
+    risk_description: "These services can be used for reconnaissance and amplification attacks."
+    business_impact: "DDoS amplification and information disclosure."
+    tags: [services, small-servers, hardening]
+
+  - id: CIS-2.2.4
+    title: "UDP small servers enabled"
+    description: "UDP small servers must be disabled (CIS 2.2.4)"
+    control_id: "2.2.4"
+    severity: medium
+    check_type: config_match
+    match_pattern: "service udp-small-servers"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no service udp-small-servers"
+    explanation: "UDP small servers are enabled."
+    risk_description: "UDP small servers enable amplification attacks and provide reconnaissance information."
+    business_impact: "DDoS amplification risk."
+    tags: [services, small-servers, hardening]
+
+  - id: CIS-2.2.5
+    title: "BOOTP server enabled"
+    description: "BOOTP server should be disabled (CIS 2.2.5)"
+    control_id: "2.2.5"
+    severity: low
+    check_type: config_match
+    match_pattern: "ip bootp server"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no ip bootp server"
+    explanation: "The BOOTP server is enabled."
+    risk_description: "BOOTP server can serve configuration files to unauthorized devices."
+    business_impact: "Potential unauthorized device bootstrapping."
+    tags: [services, bootp, hardening]
+
+  - id: CIS-3.1.1
+    title: "Login banner not configured"
+    description: "A login banner must be configured (CIS 3.1.1)"
+    control_id: "3.1.1"
+    severity: medium
+    check_type: banner_check
+    must_exist: true
+    remediation: "banner login # Authorized access only #"
+    explanation: "No login banner is configured on this device."
+    risk_description: "Missing legal banner reduces ability to prosecute unauthorized access."
+    business_impact: "Legal liability gap. CIS 3.1.1 non-compliance."
+    tags: [banner, legal, hardening]
+
+  - id: CIS-3.2.1
+    title: "Hostname not configured"
+    description: "A descriptive hostname must be set (CIS 3.2.1)"
+    control_id: "3.2.1"
+    severity: low
+    check_type: config_match
+    match_pattern: "hostname \\S+"
+    must_exist: true
+    remediation: "hostname <DEVICE-HOSTNAME>"
+    explanation: "No hostname is configured on this device."
+    risk_description: "Without a hostname, device identification in logs and management is difficult."
+    business_impact: "Operational management difficulty. Log correlation issues."
+    tags: [hostname, identification, hardening]
+
+  - id: CIS-3.3.1
+    title: "IP source routing not disabled"
+    description: "IP source routing must be disabled (CIS 3.3.1)"
+    control_id: "3.3.1"
+    severity: medium
+    check_type: config_match
+    match_pattern: "no ip source-route"
+    must_exist: true
+    remediation: "no ip source-route"
+    explanation: "IP source routing is not disabled, allowing packets to specify their own path."
+    risk_description: "Source routing bypasses routing security controls."
+    business_impact: "Potential bypass of firewall and ACL protections."
+    tags: [routing, source-route, hardening]
+
+  - id: CIS-3.3.2
+    title: "TCP keepalives not configured"
+    description: "TCP keepalives should be enabled (CIS 3.3.2)"
+    control_id: "3.3.2"
+    severity: low
+    check_type: config_match
+    match_pattern: "service tcp-keepalives"
+    must_exist: true
+    remediation: "service tcp-keepalives-in\nservice tcp-keepalives-out"
+    explanation: "TCP keepalives are not enabled."
+    risk_description: "Stale TCP connections can consume resources and be hijacked."
+    business_impact: "Session management weakness."
+    tags: [tcp, keepalive, hardening]
+
+  - id: CIS-3.3.3
+    title: "Gratuitous ARP not handled"
+    description: "Proxy ARP should be disabled on interfaces (CIS 3.3.3)"
+    control_id: "3.3.3"
+    severity: low
+    check_type: config_match
+    match_pattern: "no ip proxy-arp"
+    must_exist: true
+    remediation: "interface <INTERFACE>\n no ip proxy-arp"
+    explanation: "IP proxy-ARP is not explicitly disabled on interfaces."
+    risk_description: "Proxy ARP can be exploited for man-in-the-middle attacks."
+    business_impact: "ARP-based attack vector on local segments."
+    tags: [arp, proxy-arp, hardening]

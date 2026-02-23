@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  configguard-api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - CONFIGGUARD_HOST=0.0.0.0
+      - CONFIGGUARD_PORT=8080
+    volumes:
+      - ./rules:/app/rules:ro
+      - ./sample_configs:/app/sample_configs:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/v1/status')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  configguard-dashboard:
+    build: .
+    command: ["configguard", "dashboard", "--host", "0.0.0.0", "--port", "5000"]
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+    volumes:
+      - ./rules:/app/rules:ro
+    restart: unless-stopped
+    depends_on:
+      configguard-api:
+        condition: service_healthy

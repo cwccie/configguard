@@ -1,0 +1,123 @@
+# NIST 800-53 System and Communications Protection (SC)
+framework: nist_800_53
+
+rules:
+  - id: NIST-SC-5-1
+    title: "TCP keepalives not enabled"
+    description: "TCP keepalives protect against session hijacking and orphaned sessions (SC-5)"
+    control_id: SC-5
+    severity: low
+    check_type: config_match
+    match_pattern: "service tcp-keepalives"
+    must_exist: true
+    remediation: "service tcp-keepalives-in\nservice tcp-keepalives-out"
+    explanation: "TCP keepalives are not enabled, allowing stale connections to persist."
+    risk_description: "Orphaned TCP sessions can consume resources and may be hijacked."
+    business_impact: "Resource exhaustion risk and potential session hijacking."
+    tags: [tcp, keepalive, session-protection]
+
+  - id: NIST-SC-7-1
+    title: "Unnecessary services enabled"
+    description: "Disable unnecessary services to reduce attack surface (SC-7)"
+    control_id: SC-7
+    severity: medium
+    check_type: service_check
+    match_pattern: "finger"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no service finger\nno ip finger"
+    explanation: "The finger service is enabled, exposing user information to the network."
+    risk_description: "The finger service reveals usernames and login information, aiding reconnaissance."
+    business_impact: "Information disclosure that aids attackers in targeting user accounts."
+    tags: [services, hardening, attack-surface]
+
+  - id: NIST-SC-7-2
+    title: "HTTP server enabled"
+    description: "HTTP management interface should be disabled unless HTTPS is used (SC-7)"
+    control_id: SC-7
+    severity: high
+    check_type: config_match
+    match_pattern: "ip http server"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no ip http server\nip http secure-server"
+    explanation: "The HTTP (unencrypted) management server is enabled."
+    risk_description: "HTTP transmits all data including credentials in cleartext. Can be intercepted on the network."
+    business_impact: "Credential theft via network sniffing. Management interface compromise."
+    tags: [http, management, encryption]
+
+  - id: NIST-SC-7-3
+    title: "CDP enabled globally"
+    description: "CDP should be disabled on untrusted interfaces (SC-7)"
+    control_id: SC-7
+    severity: low
+    check_type: config_match
+    match_pattern: "^cdp run"
+    must_not_exist: true
+    must_exist: false
+    remediation: "no cdp run"
+    explanation: "Cisco Discovery Protocol (CDP) is enabled globally, advertising device information to all connected devices."
+    risk_description: "CDP reveals device model, IOS version, IP addresses, and VLAN information to adjacent devices."
+    business_impact: "Information disclosure aids network reconnaissance."
+    tags: [cdp, discovery, information-disclosure]
+
+  - id: NIST-SC-8-1
+    title: "Password encryption service not enabled"
+    description: "All passwords in config must be encrypted (SC-8)"
+    control_id: SC-8
+    severity: critical
+    check_type: config_match
+    match_pattern: "service password-encryption"
+    must_exist: true
+    remediation: "service password-encryption"
+    explanation: "Password encryption is not enabled. Passwords in the configuration file are stored in plaintext."
+    risk_description: "Anyone with read access to the config file (backup, TFTP, SNMP) can extract all passwords immediately."
+    business_impact: "Complete credential exposure. All device passwords compromised if config file is accessed."
+    tags: [password, encryption, credential-protection]
+    references:
+      - "https://nvd.nist.gov/800-53/Rev4/control/SC-8"
+
+  - id: NIST-SC-8-2
+    title: "Weak enable password (not secret)"
+    description: "Enable password must use strong hashing (SC-8)"
+    control_id: SC-8
+    severity: critical
+    check_type: config_match
+    match_pattern: "enable password "
+    must_not_exist: true
+    must_exist: false
+    remediation: "no enable password\nenable algorithm-type scrypt secret <PASSWORD>"
+    explanation: "The enable password uses weak (Type 7) or plaintext encoding instead of strong hashing."
+    risk_description: "Type 7 passwords are trivially reversible — dozens of free tools can decode them instantly."
+    business_impact: "Privileged access credentials compromised. Full administrative control of the device."
+    tags: [password, enable, credential]
+
+  - id: NIST-SC-10-1
+    title: "Source routing not disabled"
+    description: "IP source routing must be disabled (SC-10)"
+    control_id: SC-10
+    severity: medium
+    check_type: config_match
+    match_pattern: "no ip source-route"
+    must_exist: true
+    remediation: "no ip source-route"
+    explanation: "IP source routing is not explicitly disabled."
+    risk_description: "Source routing allows packets to specify their own path through the network, bypassing routing controls."
+    business_impact: "Potential bypass of security controls and traffic inspection points."
+    tags: [routing, source-route, security]
+
+  - id: NIST-SC-13-1
+    title: "SSH version 2 not enforced"
+    description: "Only SSHv2 should be permitted (SC-13)"
+    control_id: SC-13
+    severity: high
+    check_type: config_match
+    match_pattern: "ip ssh version 2"
+    must_exist: true
+    remediation: "ip ssh version 2"
+    explanation: "SSH version 2 is not explicitly enforced. The device may allow SSHv1 connections."
+    risk_description: "SSHv1 has known cryptographic weaknesses and is vulnerable to man-in-the-middle attacks."
+    business_impact: "Management session interception and credential theft via SSHv1 vulnerabilities."
+    tags: [ssh, version, cryptography]
+    references:
+      - "https://nvd.nist.gov/800-53/Rev4/control/SC-13"

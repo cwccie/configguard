@@ -1,0 +1,124 @@
+# NIST 800-53 Access Control Family (AC)
+framework: nist_800_53
+
+rules:
+  - id: NIST-AC-2-1
+    title: "AAA authentication not configured"
+    description: "Device must use centralized AAA for account management (AC-2)"
+    control_id: AC-2
+    severity: high
+    check_type: config_match
+    match_section: global
+    match_pattern: "aaa new-model"
+    must_exist: true
+    remediation: "aaa new-model\naaa authentication login default group tacacs+ local"
+    explanation: "Centralized authentication (TACACS+/RADIUS) is not configured. All user accounts are managed locally on the device."
+    risk_description: "Without centralized AAA, user account lifecycle cannot be managed enterprise-wide. Terminated employees may retain device access."
+    business_impact: "Regulatory non-compliance with NIST AC-2 account management requirements. Increased risk of unauthorized access."
+    tags: [authentication, aaa, account-management]
+    references:
+      - "https://nvd.nist.gov/800-53/Rev4/control/AC-2"
+
+  - id: NIST-AC-3-1
+    title: "No ACL on VTY lines"
+    description: "VTY lines must have access-class applied for access enforcement (AC-3)"
+    control_id: AC-3
+    severity: high
+    check_type: config_match
+    match_section: line
+    match_pattern: "access-class"
+    must_exist: true
+    remediation: "line vty 0 15\n access-class MGMT-ACCESS in"
+    explanation: "VTY (remote management) lines do not have an access control list restricting which IP addresses can connect."
+    risk_description: "Any IP address on the network can attempt to connect to this device remotely. Brute force attacks are unrestricted."
+    business_impact: "Unauthorized remote access to critical network infrastructure. Violation of NIST AC-3 access enforcement."
+    tags: [access-control, vty, management]
+
+  - id: NIST-AC-4-1
+    title: "Interface missing ACL for traffic filtering"
+    description: "Interfaces should have ACLs for information flow enforcement (AC-4)"
+    control_id: AC-4
+    severity: medium
+    check_type: interface_check
+    match_pattern: "ip access-group"
+    must_exist: true
+    remediation: "interface <INTERFACE>\n ip access-group <ACL-NAME> in"
+    explanation: "Network interfaces do not have access control lists applied to filter traffic."
+    risk_description: "All traffic flows unrestricted through this interface, bypassing any network segmentation controls."
+    business_impact: "Lack of network segmentation increases blast radius of security incidents."
+    tags: [access-control, acl, interface]
+
+  - id: NIST-AC-7-1
+    title: "Login failure lockout not configured"
+    description: "Device must lock accounts after failed login attempts (AC-7)"
+    control_id: AC-7
+    severity: medium
+    check_type: config_match
+    match_section: global
+    match_pattern: "login block-for"
+    must_exist: true
+    remediation: "login block-for 120 attempts 3 within 60"
+    explanation: "The device does not lock out users after repeated failed login attempts."
+    risk_description: "Without lockout, brute force attacks can continue indefinitely until credentials are guessed."
+    business_impact: "Increased risk of credential compromise through brute force attacks."
+    tags: [authentication, brute-force, lockout]
+
+  - id: NIST-AC-8-1
+    title: "No login warning banner"
+    description: "System must display a warning banner before login (AC-8)"
+    control_id: AC-8
+    severity: medium
+    check_type: banner_check
+    must_exist: true
+    remediation: "banner login # Authorized access only. All activity is monitored. #"
+    explanation: "No legal warning banner is displayed when users connect to this device."
+    risk_description: "Without a warning banner, the organization may have limited legal recourse against unauthorized users."
+    business_impact: "Reduced legal protection. Compliance gap for NIST AC-8."
+    tags: [banner, legal, access-control]
+
+  - id: NIST-AC-10-1
+    title: "VTY concurrent session limit not set"
+    description: "Maximum concurrent sessions should be limited (AC-10)"
+    control_id: AC-10
+    severity: low
+    check_type: config_match
+    match_section: line
+    match_pattern: "session-limit"
+    must_exist: true
+    remediation: "line vty 0 15\n session-limit 2"
+    explanation: "No limit on concurrent VTY sessions per user."
+    risk_description: "An attacker with credentials can open many sessions simultaneously for parallel exploitation."
+    business_impact: "Potential resource exhaustion and harder incident detection."
+    tags: [session, vty, concurrent-access]
+
+  - id: NIST-AC-11-1
+    title: "Console/VTY session timeout not configured"
+    description: "Interactive sessions must timeout after inactivity (AC-11)"
+    control_id: AC-11
+    severity: medium
+    check_type: config_match
+    match_section: line
+    match_pattern: "exec-timeout"
+    must_exist: true
+    remediation: "line con 0\n exec-timeout 5 0\nline vty 0 15\n exec-timeout 5 0"
+    explanation: "Management sessions do not have an inactivity timeout. Idle sessions remain open indefinitely."
+    risk_description: "An unattended logged-in session can be hijacked by anyone with physical or network access to the terminal."
+    business_impact: "Risk of session hijacking. Non-compliance with NIST AC-11 session lock requirements."
+    tags: [session, timeout, inactivity]
+
+  - id: NIST-AC-17-1
+    title: "SSH not enforced for remote access"
+    description: "Remote management must use encrypted protocols (AC-17)"
+    control_id: AC-17
+    severity: critical
+    check_type: config_match
+    match_section: line
+    match_pattern: "transport input ssh"
+    must_exist: true
+    remediation: "line vty 0 15\n transport input ssh"
+    explanation: "VTY lines allow unencrypted protocols (Telnet) for remote management. Credentials and commands are transmitted in plaintext."
+    risk_description: "Any user on the network path can intercept management traffic and capture administrative credentials in real-time."
+    business_impact: "Credential theft, complete device compromise, automatic compliance audit failure."
+    tags: [ssh, telnet, encryption, remote-access]
+    references:
+      - "https://nvd.nist.gov/800-53/Rev4/control/AC-17"

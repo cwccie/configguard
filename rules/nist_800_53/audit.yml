@@ -1,0 +1,108 @@
+# NIST 800-53 Audit and Accountability Family (AU)
+framework: nist_800_53
+
+rules:
+  - id: NIST-AU-2-1
+    title: "Logging not configured"
+    description: "Device must send logs to a central syslog server (AU-2)"
+    control_id: AU-2
+    severity: high
+    check_type: config_match
+    match_section: logging
+    match_pattern: "logging (host|\\d+\\.\\d+\\.\\d+\\.\\d+)"
+    must_exist: true
+    remediation: "logging host 10.0.0.100\nlogging trap informational"
+    explanation: "No syslog server is configured. Security events are only stored locally on the device."
+    risk_description: "Local-only logs can be erased by an attacker who compromises the device, eliminating the forensic trail."
+    business_impact: "Inability to detect and investigate security incidents. NIST AU-2 compliance failure."
+    tags: [logging, syslog, audit]
+
+  - id: NIST-AU-3-1
+    title: "Log timestamps not configured"
+    description: "Logs must include timestamps for event correlation (AU-3)"
+    control_id: AU-3
+    severity: medium
+    check_type: config_match
+    match_section: global
+    match_pattern: "service timestamps log datetime"
+    must_exist: true
+    remediation: "service timestamps log datetime msec localtime show-timezone"
+    explanation: "Log entries do not include detailed timestamps."
+    risk_description: "Without timestamps, logs from different devices cannot be correlated during incident investigation."
+    business_impact: "Degraded incident response capability. Compliance gap for audit record content."
+    tags: [logging, timestamps, audit]
+
+  - id: NIST-AU-4-1
+    title: "Logging buffer too small or not set"
+    description: "Adequate local log storage must be configured (AU-4)"
+    control_id: AU-4
+    severity: low
+    check_type: config_match
+    match_section: global
+    match_pattern: "logging buffered"
+    must_exist: true
+    remediation: "logging buffered 64000 informational"
+    explanation: "Local logging buffer is not configured or may be too small."
+    risk_description: "Important events may be lost before they can be forwarded to the syslog server."
+    business_impact: "Potential loss of audit data during network disruptions."
+    tags: [logging, buffer, storage]
+
+  - id: NIST-AU-8-1
+    title: "NTP time synchronization not configured"
+    description: "System clocks must be synchronized via NTP (AU-8)"
+    control_id: AU-8
+    severity: high
+    check_type: config_match
+    match_section: ntp
+    match_pattern: "ntp server"
+    must_exist: true
+    remediation: "ntp server 10.0.0.50\nntp server 10.0.0.51"
+    explanation: "No NTP server is configured for time synchronization."
+    risk_description: "Without synchronized time, logs cannot be correlated across devices. Certificates and time-based auth may fail."
+    business_impact: "Forensic investigation failure. Compliance violation for NIST AU-8 time stamps."
+    tags: [ntp, time, synchronization]
+
+  - id: NIST-AU-8-2
+    title: "NTP authentication not enabled"
+    description: "NTP should use authentication to prevent time manipulation (AU-8)"
+    control_id: AU-8
+    severity: medium
+    check_type: config_match
+    match_section: global
+    match_pattern: "ntp authenticate"
+    must_exist: true
+    remediation: "ntp authenticate\nntp authentication-key 1 md5 <KEY>\nntp trusted-key 1"
+    explanation: "NTP authentication is not enabled. Time sources are not verified."
+    risk_description: "An attacker can spoof NTP responses to manipulate device time, affecting logs and certificates."
+    business_impact: "Potential log manipulation and time-based attack vectors."
+    tags: [ntp, authentication, time]
+
+  - id: NIST-AU-9-1
+    title: "Console logging at inappropriate level"
+    description: "Console logging should be limited to prevent information disclosure (AU-9)"
+    control_id: AU-9
+    severity: low
+    check_type: config_match
+    match_section: global
+    match_pattern: "logging console (critical|emergencies|alerts)"
+    must_exist: true
+    remediation: "logging console critical"
+    explanation: "Console logging level may expose sensitive information to anyone with physical access."
+    risk_description: "Verbose console logging can expose operational details to unauthorized observers."
+    business_impact: "Information disclosure risk at console."
+    tags: [logging, console, information-disclosure]
+
+  - id: NIST-AU-12-1
+    title: "AAA accounting not configured"
+    description: "Command execution must be logged via AAA accounting (AU-12)"
+    control_id: AU-12
+    severity: high
+    check_type: config_match
+    match_section: global
+    match_pattern: "aaa accounting"
+    must_exist: true
+    remediation: "aaa accounting exec default start-stop group tacacs+\naaa accounting commands 15 default start-stop group tacacs+"
+    explanation: "AAA accounting is not configured. Administrative commands are not being logged to a central server."
+    risk_description: "Without command accounting, there is no record of what configuration changes were made, by whom, or when."
+    business_impact: "No audit trail for configuration changes. Non-compliance with NIST AU-12 audit generation."
+    tags: [aaa, accounting, audit-trail]

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Scan Configuration — ConfigGuard{% endblock %}
+{% block content %}
+<h1 style="margin-bottom: 1.5rem;">Scan Configuration</h1>
+
+<div class="card">
+    <h2>Paste Configuration</h2>
+    <form method="POST">
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Device Name</label>
+            <input type="text" name="device_name" placeholder="e.g., core-rtr-01" style="max-width: 400px;">
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Configuration</label>
+            <textarea name="config_text" placeholder="Paste your network device configuration here..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Scan for Compliance</button>
+    </form>
+</div>
+{% endblock %}
