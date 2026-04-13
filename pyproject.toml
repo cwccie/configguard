@@ -44,7 +44,7 @@ dev = [
     "pytest-cov>=4.0",
     "ruff>=0.1",
     "mypy>=1.0",
-    "httpx>=0.25",
+    "httpx>=0.28.1",
 ]
 batfish = [
     "pybatfish>=2023.10",
