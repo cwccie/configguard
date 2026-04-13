@@ -47,7 +47,7 @@ dev = [
     "httpx>=0.25",
 ]
 batfish = [
-    "pybatfish>=2023.10",
+    "pybatfish>=2025.7.7.2423",
 ]
 
 [project.scripts]
