@@ -33,7 +33,7 @@ dependencies = [
     "rich>=13.0",
     "reportlab>=4.0",
     "pydantic>=2.0",
-    "watchdog>=3.0",
+    "watchdog>=6.0.0",
     "gitpython>=3.1",
     "tabulate>=0.9",
 ]
